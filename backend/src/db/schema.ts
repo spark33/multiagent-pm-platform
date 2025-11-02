@@ -98,10 +98,92 @@ export function createTables() {
     )
   `)
 
+  // Task Executions - tracks the execution state of each task
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_executions (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      phase_id TEXT NOT NULL,
+      project_id TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('pending', 'in_progress', 'under_discussion', 'awaiting_consensus', 'awaiting_user', 'completed')),
+      primary_agent_id TEXT NOT NULL,
+      reviewer_agent_ids TEXT NOT NULL DEFAULT '[]',
+      current_round INTEGER NOT NULL DEFAULT 0,
+      max_rounds INTEGER NOT NULL DEFAULT 7,
+      discussion_thread_id TEXT,
+      current_deliverable_id TEXT,
+      started_at TEXT,
+      completed_at TEXT,
+      FOREIGN KEY (project_id) REFERENCES projects(id)
+    )
+  `)
+
+  // Discussion Threads - agent collaboration conversations
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS discussion_threads (
+      id TEXT PRIMARY KEY,
+      task_execution_id TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('active', 'consensus_reached', 'awaiting_user', 'closed')),
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (task_execution_id) REFERENCES task_executions(id)
+    )
+  `)
+
+  // Discussion Messages - individual agent messages in discussions
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS discussion_messages (
+      id TEXT PRIMARY KEY,
+      thread_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      agent_name TEXT NOT NULL,
+      agent_role TEXT NOT NULL,
+      round INTEGER NOT NULL,
+      message_type TEXT NOT NULL CHECK(message_type IN ('initial_review', 'response', 'revision', 'question', 'approval', 'concern', 'user_feedback')),
+      content TEXT NOT NULL,
+      deliverable_version INTEGER,
+      approval_status TEXT CHECK(approval_status IN ('approved', 'has_concerns', 'pending')),
+      timestamp TEXT NOT NULL,
+      FOREIGN KEY (thread_id) REFERENCES discussion_threads(id),
+      FOREIGN KEY (agent_id) REFERENCES agents(id)
+    )
+  `)
+
+  // Deliverables - versioned outputs from tasks
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS deliverables (
+      id TEXT PRIMARY KEY,
+      task_execution_id TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      description TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (task_execution_id) REFERENCES task_executions(id),
+      FOREIGN KEY (created_by) REFERENCES agents(id)
+    )
+  `)
+
+  // User Reviews - user feedback on completed tasks
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_reviews (
+      id TEXT PRIMARY KEY,
+      task_execution_id TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('pending', 'approved', 'feedback_provided')),
+      user_feedback TEXT,
+      reviewed_at TEXT,
+      FOREIGN KEY (task_execution_id) REFERENCES task_executions(id)
+    )
+  `)
+
   console.log('✅ Database tables created successfully')
 }
 
 export function dropTables() {
+  db.exec(`DROP TABLE IF EXISTS user_reviews`)
+  db.exec(`DROP TABLE IF EXISTS deliverables`)
+  db.exec(`DROP TABLE IF EXISTS discussion_messages`)
+  db.exec(`DROP TABLE IF EXISTS discussion_threads`)
+  db.exec(`DROP TABLE IF EXISTS task_executions`)
   db.exec(`DROP TABLE IF EXISTS tasks`)
   db.exec(`DROP TABLE IF EXISTS phases`)
   db.exec(`DROP TABLE IF EXISTS roadmaps`)
