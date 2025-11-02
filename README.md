@@ -31,11 +31,12 @@ multiagent-v0/
 │   ├── lib/              # Utilities and data
 │   └── README.md         # Frontend-specific docs
 ├── backend/              # (Coming soon) Backend services
-├── docs/                 # Additional documentation
-│   ├── ARCHITECTURE.md
-│   ├── AGENTS.md
-│   ├── WORKFLOW.md
-│   └── SITEMAP.md
+├── docs/                 # Documentation
+│   ├── ARCHITECTURE.md   # System architecture
+│   ├── AGENTS.md         # Agent specifications
+│   ├── WORKFLOW.md       # Development workflow
+│   ├── SITEMAP.md        # Sitemap and data models
+│   └── CONTRIBUTING.md   # Contribution guidelines
 └── README.md            # This file
 ```
 
@@ -70,10 +71,11 @@ Visit http://localhost:3000 to see the application.
 
 - [**Frontend README**](./frontend/README.md) - Frontend setup and architecture
 - [**LLM Integration Guide**](./frontend/LLM_INTEGRATION.md) - How to integrate LLMs into the PM flow
-- [**ARCHITECTURE.md**](./ARCHITECTURE.md) - System architecture and technical design
-- [**AGENTS.md**](./AGENTS.md) - Agent roles, responsibilities, and capabilities
-- [**WORKFLOW.md**](./WORKFLOW.md) - Phase-based development workflow
-- [**SITEMAP.md**](./SITEMAP.md) - Complete sitemap and data models
+- [**ARCHITECTURE**](./docs/ARCHITECTURE.md) - System architecture and technical design
+- [**AGENTS**](./docs/AGENTS.md) - Agent roles, responsibilities, and capabilities
+- [**WORKFLOW**](./docs/WORKFLOW.md) - Phase-based development workflow
+- [**SITEMAP**](./docs/SITEMAP.md) - Complete sitemap and data models
+- [**CONTRIBUTING**](./docs/CONTRIBUTING.md) - Development guidelines and standards
 
 ## Current State
 
@@ -126,7 +128,7 @@ The frontend is fully functional with:
 
 ### Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines and standards.
+See [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for development guidelines and standards.
 
 ### Running the Stack
 
