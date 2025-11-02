@@ -29,13 +29,15 @@ multiagent-v0/
 │   ├── app/              # Next.js app router
 │   ├── components/       # React components
 │   ├── lib/              # Utilities and data
-│   └── README.md         # Frontend-specific docs
+│   ├── docs/             # Frontend-specific docs
+│   │   └── SITEMAP.md   # Sitemap and data models
+│   ├── LLM_INTEGRATION.md # LLM integration guide
+│   └── README.md         # Frontend setup guide
 ├── backend/              # (Coming soon) Backend services
-├── docs/                 # Documentation
+├── docs/                 # System-wide documentation
 │   ├── ARCHITECTURE.md   # System architecture
 │   ├── AGENTS.md         # Agent specifications
 │   ├── WORKFLOW.md       # Development workflow
-│   ├── SITEMAP.md        # Sitemap and data models
 │   └── CONTRIBUTING.md   # Contribution guidelines
 └── README.md            # This file
 ```
@@ -69,13 +71,16 @@ Visit http://localhost:3000 to see the application.
 
 ## Documentation
 
-- [**Frontend README**](./frontend/README.md) - Frontend setup and architecture
-- [**LLM Integration Guide**](./frontend/LLM_INTEGRATION.md) - How to integrate LLMs into the PM flow
+### System-Wide
 - [**ARCHITECTURE**](./docs/ARCHITECTURE.md) - System architecture and technical design
 - [**AGENTS**](./docs/AGENTS.md) - Agent roles, responsibilities, and capabilities
 - [**WORKFLOW**](./docs/WORKFLOW.md) - Phase-based development workflow
-- [**SITEMAP**](./docs/SITEMAP.md) - Complete sitemap and data models
 - [**CONTRIBUTING**](./docs/CONTRIBUTING.md) - Development guidelines and standards
+
+### Frontend
+- [**Frontend README**](./frontend/README.md) - Frontend setup and architecture
+- [**Sitemap**](./frontend/docs/SITEMAP.md) - Complete sitemap and data models
+- [**LLM Integration Guide**](./frontend/LLM_INTEGRATION.md) - How to integrate LLMs into the PM flow
 
 ## Current State
 
