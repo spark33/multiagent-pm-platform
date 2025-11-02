@@ -137,12 +137,17 @@ projects (1) -> (many) chat_messages
 
 ## Environment Variables
 
-Create a `.env` file (optional):
+Create a `.env` file:
 
 ```bash
 PORT=3001
 NODE_ENV=development
+
+# Required: Anthropic API key for LLM integration
+ANTHROPIC_API_KEY=your-api-key-here
 ```
+
+Get your API key from: https://console.anthropic.com/
 
 ## Scripts
 
@@ -164,13 +169,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 const response = await fetch(`${API_BASE}/api/projects`)
 ```
 
-## Future Enhancements
+## LLM Integration
 
-### LLM Integration
+The backend now uses Claude (Anthropic) for intelligent discovery conversations:
 
-The backend has placeholders for LLM integration:
+- **Chat Service** (`src/services/llm-service.ts`) - Uses Claude 3.5 Sonnet for context-aware PM questions
+- **Adaptive Questioning** - Intelligently asks relevant questions based on the project description
+- **Structured Responses** - Returns JSON with options/actions for the frontend to render
 
-- **Chat Service** (`src/services/chat-service.ts`) - Replace `generatePMResponse()` with OpenAI/Anthropic API calls
+### Future Enhancements
+
 - **Roadmap Generator** (`src/services/roadmap-generator.ts`) - Replace hardcoded logic with LLM-based generation
 
 ### WebSockets

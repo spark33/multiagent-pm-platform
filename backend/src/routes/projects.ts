@@ -23,7 +23,7 @@ router.get('/', (req: Request, res: Response) => {
 })
 
 // POST /api/projects - Create a new project
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const body = req.body as CreateProjectRequest
 
@@ -39,7 +39,7 @@ router.post('/', (req: Request, res: Response) => {
 
     // Generate AI PM's initial response to start discovery
     const chatHistory = ChatModel.getHistory(newProject.id)
-    const pmResponse = generatePMResponse(chatHistory, body.description)
+    const pmResponse = await generatePMResponse(chatHistory, body.description)
     ChatModel.addMessage(newProject.id, 'assistant', pmResponse)
 
     res.status(201).json(newProject)
@@ -100,11 +100,8 @@ router.post('/:id/chat', async (req: Request, res: Response) => {
     // Get conversation history
     const chatHistory = ChatModel.getHistory(id)
 
-    // Simulate delay for realistic feel
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // Generate PM response (TODO: Replace with LLM)
-    const responseContent = generatePMResponse(chatHistory, body.content)
+    // Generate PM response using LLM
+    const responseContent = await generatePMResponse(chatHistory, body.content)
 
     // Add assistant message
     const assistantMessage = ChatModel.addMessage(id, 'assistant', responseContent)
@@ -129,8 +126,11 @@ router.post('/:id/roadmap', (req: Request, res: Response) => {
       return
     }
 
-    // Generate roadmap (TODO: Replace with LLM-based generation)
-    const roadmap = generateRoadmap(project.description, project.context)
+    // Get chat history to inform roadmap generation
+    const chatHistory = ChatModel.getHistory(id)
+
+    // Generate roadmap using chat context (TODO: Replace with LLM-based generation)
+    const roadmap = generateRoadmap(project.description, project.context, chatHistory)
 
     // Save roadmap to database
     ProjectModel.saveRoadmap(id, roadmap)

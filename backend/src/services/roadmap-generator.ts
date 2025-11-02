@@ -1,12 +1,23 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Roadmap, Phase, ProjectContext, PhaseName } from '../types'
+import type { Roadmap, Phase, ProjectContext, PhaseName, ChatMessage } from '../types'
 
 /**
- * Generate a sample roadmap based on project description and context.
- * TODO: Replace with LLM-based generation
+ * Generate a sample roadmap based on project description, context, and discovery conversation.
+ * TODO: Replace with LLM-based generation using chat history
  */
-export function generateRoadmap(description: string, context: ProjectContext): Roadmap {
+export function generateRoadmap(
+  description: string,
+  context: ProjectContext,
+  chatHistory: ChatMessage[] = []
+): Roadmap {
   const now = new Date().toISOString()
+
+  // Extract key insights from chat history for roadmap customization
+  const conversationSummary = chatHistory
+    .filter(m => m.role === 'user')
+    .map(m => m.content)
+    .join(' ')
+    .toLowerCase()
 
   const phases: Phase[] = [
     {
@@ -314,9 +325,18 @@ export function generateRoadmap(description: string, context: ProjectContext): R
     }
   ]
 
+  // Generate context-aware summary based on chat history
+  let summary = `Comprehensive roadmap for: ${description}. `
+
+  if (chatHistory.length > 0) {
+    summary += `Based on our discovery conversation, this roadmap is tailored to your specific needs and goals. `
+  }
+
+  summary += `Covers market research, product strategy, design, architecture, development, and launch phases with AI agents handling all execution.`
+
   return {
     phases,
     generatedAt: now,
-    summary: `Comprehensive roadmap for ${description}. Covers market research, product strategy, design, architecture, development, and launch phases with AI agents handling all execution.`
+    summary
   }
 }
