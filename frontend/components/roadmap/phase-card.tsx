@@ -1,10 +1,13 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 import type { Phase, Task } from "@/lib/types/project"
 
 interface PhaseCardProps {
   phase: Phase
+  projectId: string
   isFirst?: boolean
   isLast?: boolean
 }
@@ -27,7 +30,7 @@ const priorityColors = {
   low: "secondary",
 } as const
 
-export function PhaseCard({ phase, isFirst, isLast }: PhaseCardProps) {
+export function PhaseCard({ phase, projectId, isFirst, isLast }: PhaseCardProps) {
   const completedTasks = phase.tasks.filter(t => t.status === "completed").length
   const totalTasks = phase.tasks.length
   const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
@@ -95,7 +98,7 @@ export function PhaseCard({ phase, isFirst, isLast }: PhaseCardProps) {
                   <h4 className="text-sm font-medium mb-3">Tasks ({totalTasks})</h4>
                   <div className="space-y-2">
                     {phase.tasks.map((task) => (
-                      <TaskItem key={task.id} task={task} />
+                      <TaskItem key={task.id} task={task} projectId={projectId} phaseId={phase.id} />
                     ))}
                   </div>
                 </div>
@@ -126,11 +129,51 @@ export function PhaseCard({ phase, isFirst, isLast }: PhaseCardProps) {
   )
 }
 
-function TaskItem({ task }: { task: Task }) {
+function TaskItem({ task, projectId, phaseId }: { task: Task; projectId: string; phaseId: string }) {
+  const router = useRouter()
+
+  const handleStartTask = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    try {
+      // Create task execution
+      const response = await fetch('/api/task-executions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: task.id,
+          phaseId: phaseId,
+          projectId: projectId
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to start task execution')
+      }
+
+      const execution = await response.json()
+
+      // Navigate to task execution page
+      router.push(`/projects/${projectId}/tasks/${task.id}`)
+    } catch (error) {
+      console.error('Error starting task:', error)
+      alert('Failed to start task execution')
+    }
+  }
+
+  const handleViewTask = () => {
+    if (task.status === 'in_progress' || task.status === 'completed') {
+      router.push(`/projects/${projectId}/tasks/${task.id}`)
+    }
+  }
+
   return (
-    <div className={`p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors ${
-      task.status === "completed" ? "opacity-75" : ""
-    }`}>
+    <div
+      className={`p-3 rounded-lg border bg-card transition-colors ${
+        task.status === "completed" ? "opacity-75" : ""
+      } ${task.status !== "pending" ? "cursor-pointer hover:bg-accent/50" : ""}`}
+      onClick={handleViewTask}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -161,6 +204,27 @@ function TaskItem({ task }: { task: Task }) {
             </div>
           )}
         </div>
+
+        {/* Start Task Button */}
+        {task.status === "pending" && (
+          <Button
+            size="sm"
+            onClick={handleStartTask}
+            className="flex-shrink-0"
+          >
+            Start Task
+          </Button>
+        )}
+
+        {task.status === "in_progress" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-shrink-0"
+          >
+            View Progress
+          </Button>
+        )}
       </div>
 
       {/* Deliverables for task */}
