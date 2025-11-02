@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express'
 import { ProjectModel } from '../models/project'
 import { ChatModel } from '../models/chat'
+import { TaskModel } from '../models/task'
 import { generateRoadmap } from '../services/roadmap-generator'
 import { generatePMResponse } from '../services/chat-service'
+import { TaskOrchestrator } from '../services/task-orchestrator'
 import type { CreateProjectRequest, SendMessageRequest } from '../types'
 
 const router = Router()
@@ -149,7 +151,7 @@ router.post('/:id/roadmap', (req: Request, res: Response) => {
 })
 
 // PATCH /api/projects/:id/phases/:phaseId - Update phase status
-router.patch('/:id/phases/:phaseId', (req: Request, res: Response) => {
+router.patch('/:id/phases/:phaseId', async (req: Request, res: Response) => {
   try {
     const { id, phaseId } = req.params
     const { status } = req.body
@@ -164,6 +166,38 @@ router.patch('/:id/phases/:phaseId', (req: Request, res: Response) => {
     if (!success) {
       res.status(404).json({ error: 'Phase not found' })
       return
+    }
+
+    // If phase is being started, automatically start the first task
+    if (status === 'in_progress') {
+      const tasks = TaskModel.getByPhaseId(phaseId)
+
+      // Find the first pending task with no dependencies
+      const firstTask = tasks.find(task =>
+        task.status === 'pending' &&
+        (!task.dependencies || task.dependencies.length === 0)
+      )
+
+      if (firstTask) {
+        console.log(`Auto-starting first task in phase: ${firstTask.title}`)
+
+        // Start task execution asynchronously (don't wait for it)
+        TaskOrchestrator.startTaskExecution(firstTask.id, phaseId, id)
+          .then(execution => {
+            console.log(`✅ Task execution started: ${execution.id}`)
+
+            // Start the discussion round after a brief delay to let the initial work complete
+            setTimeout(async () => {
+              try {
+                await TaskOrchestrator.processRound(execution.id)
+                console.log(`✅ First discussion round initiated for ${execution.id}`)
+              } catch (err) {
+                console.error(`Error processing first round:`, err)
+              }
+            }, 2000)
+          })
+          .catch(err => console.error('Error starting task:', err))
+      }
     }
 
     // Return updated project
