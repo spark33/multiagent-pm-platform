@@ -12,8 +12,8 @@ const sampleAgents = [
     goal: "Guide users through discovery and create comprehensive project roadmaps",
     backstory: "An experienced PM who asks the right questions to understand user needs and translate them into actionable plans. Expert at market research and competitive analysis.",
     tools: ["web_search", "competitor_analysis", "market_research"],
-    llmProvider: "openai",
-    llmModel: "gpt-4",
+    llmProvider: "anthropic",
+    llmModel: "claude-3-5-haiku-20241022",
     allowDelegation: true,
     verbose: false
   },
@@ -23,8 +23,8 @@ const sampleAgents = [
     goal: "Conduct thorough market research and competitive analysis",
     backstory: "A meticulous researcher with expertise in market analysis, competitive intelligence, and user research. Provides data-driven insights.",
     tools: ["web_search", "data_analysis", "report_generation"],
-    llmProvider: "openai",
-    llmModel: "gpt-4",
+    llmProvider: "anthropic",
+    llmModel: "claude-3-5-haiku-20241022",
     allowDelegation: false,
     verbose: true
   },
@@ -35,7 +35,7 @@ const sampleAgents = [
     backstory: "A creative UX designer focused on user-centered design. Expert at translating user needs into elegant, functional designs.",
     tools: ["figma", "user_testing", "prototyping"],
     llmProvider: "anthropic",
-    llmModel: "claude-3-opus",
+    llmModel: "claude-3-5-haiku-20241022",
     allowDelegation: false,
     verbose: false
   },
@@ -45,8 +45,8 @@ const sampleAgents = [
     goal: "Build robust, scalable backend systems",
     backstory: "A seasoned backend engineer with expertise in API design, database architecture, and system optimization.",
     tools: ["code_execution", "git", "database_tools"],
-    llmProvider: "openai",
-    llmModel: "gpt-4",
+    llmProvider: "anthropic",
+    llmModel: "claude-3-5-haiku-20241022",
     allowDelegation: false,
     verbose: true
   }
