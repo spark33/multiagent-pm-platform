@@ -79,8 +79,8 @@ export default function ProjectChatPage({ params }: { params: Promise<{ id: stri
     const messageToSend = messageOverride || inputMessage.trim()
     if (!messageToSend || !resolvedParams || isSending) return
 
-    // Check if this is the "Generate Roadmap" action
-    if (messageToSend === "Generate Roadmap") {
+    // Check if this is the "Let's go!" action
+    if (messageToSend === "Let's go!") {
       handleGenerateRoadmap()
       return
     }
@@ -145,8 +145,8 @@ export default function ProjectChatPage({ params }: { params: Promise<{ id: stri
 
       const data = await response.json()
 
-      // Navigate to roadmap page
-      router.push(`/projects/${resolvedParams.id}/roadmap`)
+      // Navigate to roadmap page with autostart flag
+      router.push(`/projects/${resolvedParams.id}/roadmap?autostart=true`)
     } catch (error) {
       console.error("Error generating roadmap:", error)
       alert("Failed to generate roadmap. Please try again.")
@@ -185,23 +185,15 @@ export default function ProjectChatPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Header */}
-      <div className="border-b bg-background">
-        <div className="mx-auto max-w-5xl px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-                ← Back to Home
-              </Link>
-              <h1 className="mt-2 text-2xl font-bold">{project.title}</h1>
-              <div className="mt-1 flex items-center gap-2">
-                <Badge>{project.status}</Badge>
-                <span className="text-sm text-muted-foreground">Discovery Phase</span>
-              </div>
+      {/* Page Header */}
+      <div className="border-b bg-background px-8 py-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{project.title}</h1>
+            <div className="mt-1 flex items-center gap-2">
+              <Badge>{project.status}</Badge>
+              <span className="text-sm text-muted-foreground">Discovery Phase</span>
             </div>
-            <Button variant="outline" disabled>
-              Generate Roadmap
-            </Button>
           </div>
         </div>
       </div>

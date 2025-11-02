@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getProjectById, updateProject, deleteProject } from "@/lib/data/sample-projects"
 
-// GET /api/projects/[id]
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
+
+// GET /api/projects/:id - Get project by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const project = getProjectById(id)
 
-    if (!project) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      )
-    }
+    const response = await fetch(`${BACKEND_URL}/api/projects/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
 
-    return NextResponse.json(project)
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error fetching project:", error)
     return NextResponse.json(
@@ -27,7 +28,7 @@ export async function GET(
   }
 }
 
-// PUT /api/projects/[id]
+// PUT /api/projects/:id - Update a project
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -36,16 +37,16 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const updatedProject = updateProject(id, body)
+    const response = await fetch(`${BACKEND_URL}/api/projects/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
 
-    if (!updatedProject) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(updatedProject)
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error updating project:", error)
     return NextResponse.json(
@@ -55,23 +56,27 @@ export async function PUT(
   }
 }
 
-// DELETE /api/projects/[id]
+// DELETE /api/projects/:id - Delete a project
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const success = deleteProject(id)
 
-    if (!success) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      )
+    const response = await fetch(`${BACKEND_URL}/api/projects/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (response.status === 204) {
+      return new NextResponse(null, { status: 204 })
     }
 
-    return NextResponse.json({ success: true, message: "Project deleted successfully" })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error deleting project:", error)
     return NextResponse.json(

@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAllProjects, createProject } from "@/lib/data/sample-projects"
-import type { CreateProjectRequest, ProjectListResponse } from "@/lib/types/project"
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
 // GET /api/projects - List all projects
 export async function GET() {
   try {
-    const projects = getAllProjects()
+    const response = await fetch(`${BACKEND_URL}/api/projects`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
 
-    const response: ProjectListResponse = {
-      projects,
-      total: projects.length,
-    }
-
-    return NextResponse.json(response)
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error fetching projects:", error)
     return NextResponse.json(
@@ -25,18 +26,18 @@ export async function GET() {
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateProjectRequest = await request.json()
+    const body = await request.json()
 
-    if (!body.description || !body.description.trim()) {
-      return NextResponse.json(
-        { error: "Project description is required" },
-        { status: 400 }
-      )
-    }
+    const response = await fetch(`${BACKEND_URL}/api/projects`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
 
-    const newProject = createProject(body.description)
-
-    return NextResponse.json(newProject, { status: 201 })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error creating project:", error)
     return NextResponse.json(

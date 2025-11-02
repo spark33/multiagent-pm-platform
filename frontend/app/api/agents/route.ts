@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAllAgents, createAgent } from "@/lib/data/sample-agents"
-import type { CreateAgentRequest, AgentListResponse } from "@/lib/types/agent"
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
 // GET /api/agents - List all agents
 export async function GET() {
   try {
-    const agents = getAllAgents()
+    const response = await fetch(`${BACKEND_URL}/api/agents`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
 
-    const response: AgentListResponse = {
-      agents,
-      total: agents.length,
-    }
-
-    return NextResponse.json(response)
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error fetching agents:", error)
     return NextResponse.json(
@@ -25,30 +26,18 @@ export async function GET() {
 // POST /api/agents - Create a new agent
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateAgentRequest = await request.json()
+    const body = await request.json()
 
-    // Basic validation
-    if (!body.name || !body.role || !body.goal) {
-      return NextResponse.json(
-        { error: "Missing required fields: name, role, and goal are required" },
-        { status: 400 }
-      )
-    }
-
-    // Create the agent
-    const newAgent = createAgent({
-      name: body.name,
-      role: body.role,
-      goal: body.goal,
-      backstory: body.backstory || "",
-      tools: body.tools || [],
-      llmProvider: body.llmProvider || "openai",
-      llmModel: body.llmModel || "gpt-4",
-      allowDelegation: body.allowDelegation ?? true,
-      verbose: body.verbose ?? true,
+    const response = await fetch(`${BACKEND_URL}/api/agents`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     })
 
-    return NextResponse.json(newAgent, { status: 201 })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error creating agent:", error)
     return NextResponse.json(

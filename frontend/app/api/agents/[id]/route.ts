@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAgentById, updateAgent, deleteAgent } from "@/lib/data/sample-agents"
-import type { UpdateAgentRequest } from "@/lib/types/agent"
 
-// GET /api/agents/[id] - Get a single agent by ID
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
+
+// GET /api/agents/:id - Get agent by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const agent = getAgentById(id)
 
-    if (!agent) {
-      return NextResponse.json(
-        { error: "Agent not found" },
-        { status: 404 }
-      )
-    }
+    const response = await fetch(`${BACKEND_URL}/api/agents/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
 
-    return NextResponse.json(agent)
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error fetching agent:", error)
     return NextResponse.json(
@@ -28,25 +28,25 @@ export async function GET(
   }
 }
 
-// PUT /api/agents/[id] - Update an existing agent
+// PUT /api/agents/:id - Update an agent
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const body: UpdateAgentRequest = await request.json()
+    const body = await request.json()
 
-    const updatedAgent = updateAgent(id, body)
+    const response = await fetch(`${BACKEND_URL}/api/agents/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
 
-    if (!updatedAgent) {
-      return NextResponse.json(
-        { error: "Agent not found" },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(updatedAgent)
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error updating agent:", error)
     return NextResponse.json(
@@ -56,23 +56,27 @@ export async function PUT(
   }
 }
 
-// DELETE /api/agents/[id] - Delete an agent
+// DELETE /api/agents/:id - Delete an agent
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const success = deleteAgent(id)
 
-    if (!success) {
-      return NextResponse.json(
-        { error: "Agent not found" },
-        { status: 404 }
-      )
+    const response = await fetch(`${BACKEND_URL}/api/agents/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (response.status === 204) {
+      return new NextResponse(null, { status: 204 })
     }
 
-    return NextResponse.json({ success: true, message: "Agent deleted successfully" })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error("Error deleting agent:", error)
     return NextResponse.json(

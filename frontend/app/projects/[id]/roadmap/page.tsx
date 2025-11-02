@@ -1,20 +1,23 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { PhaseCard } from "@/components/roadmap/phase-card"
+import { GanttChart } from "@/components/roadmap/gantt-chart"
 import type { Project } from "@/lib/types/project"
 
 export default function RoadmapPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [project, setProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null)
+  const [hasAutoStarted, setHasAutoStarted] = useState(false)
 
   useEffect(() => {
     params.then(setResolvedParams)
@@ -39,11 +42,50 @@ export default function RoadmapPage({ params }: { params: Promise<{ id: string }
 
       const data = await response.json()
       setProject(data)
+
+      // Auto-start first phase if autostart parameter is present
+      const shouldAutoStart = searchParams.get('autostart') === 'true'
+      if (shouldAutoStart && !hasAutoStarted && data.roadmap?.phases?.length > 0) {
+        const firstPhase = data.roadmap.phases[0]
+        if (firstPhase.status === 'pending') {
+          setHasAutoStarted(true)
+          await startPhase(firstPhase.id)
+        }
+      }
     } catch (error) {
       console.error("Error loading project:", error)
       setProject(null)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const startPhase = async (phaseId: string) => {
+    if (!resolvedParams) return
+
+    try {
+      const response = await fetch(`/api/projects/${resolvedParams.id}/phases/${phaseId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'in_progress' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to start phase')
+      }
+
+      const data = await response.json()
+
+      // Update local state with the new project data
+      if (data.project) {
+        setProject(data.project)
+      }
+
+      console.log(`Phase started: ${phaseId}`)
+    } catch (error) {
+      console.error("Error starting phase:", error)
     }
   }
 
@@ -81,91 +123,30 @@ export default function RoadmapPage({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-background sticky top-0 z-10">
-        <div className="mx-auto max-w-6xl px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-                ← Back to Home
+      {/* Page Header */}
+      <div className="border-b bg-background px-8 py-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{project.title}</h1>
+            <div className="mt-1 flex items-center gap-2">
+              <Badge>{project.status}</Badge>
+              <span className="text-sm text-muted-foreground">Project Roadmap</span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/projects/${project.id}/chat`}>
+                View Discovery Chat
               </Link>
-              <h1 className="mt-2 text-2xl font-bold">{project.title}</h1>
-              <div className="mt-1 flex items-center gap-2">
-                <Badge>{project.status}</Badge>
-                <span className="text-sm text-muted-foreground">Project Roadmap</span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" asChild>
-                <Link href={`/projects/${project.id}/chat`}>
-                  View Discovery Chat
-                </Link>
-              </Button>
-            </div>
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-8 py-8">
-        {/* Roadmap Overview */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Roadmap Overview</CardTitle>
-              <CardDescription>{roadmap.summary}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Phases</p>
-                  <p className="text-2xl font-bold">{roadmap.phases.length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {completedPhases} completed • {inProgressPhases} in progress
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Tasks</p>
-                  <p className="text-2xl font-bold">{totalTasks}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {completedTasks} completed ({Math.round((completedTasks / totalTasks) * 100)}%)
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Generated</p>
-                  <p className="text-sm font-medium">
-                    {new Date(roadmap.generatedAt).toLocaleDateString()}
-                  </p>
-                  {roadmap.approvedAt && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Approved {new Date(roadmap.approvedAt).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Overall progress bar */}
-              <Separator className="my-4" />
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="font-medium">Overall Progress</span>
-                  <span className="text-muted-foreground">
-                    {completedTasks} of {totalTasks} tasks completed
-                  </span>
-                </div>
-                <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${(completedTasks / totalTasks) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="w-full pt-8">
         {/* Project Context */}
         {project.context && Object.keys(project.context).length > 0 && (
-          <div className="mb-8">
+          <div className="mb-8 px-8">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Project Context</CardTitle>
@@ -207,18 +188,11 @@ export default function RoadmapPage({ params }: { params: Promise<{ id: string }
           </div>
         )}
 
-        {/* Timeline */}
-        <div>
-          <h2 className="text-xl font-bold mb-6">Execution Timeline</h2>
-          <div className="space-y-0">
-            {roadmap.phases.map((phase, index) => (
-              <PhaseCard
-                key={phase.id}
-                phase={phase}
-                isFirst={index === 0}
-                isLast={index === roadmap.phases.length - 1}
-              />
-            ))}
+        {/* Gantt Chart */}
+        <div className="px-8">
+          <h2 className="text-xl font-bold mb-4">Execution Timeline</h2>
+          <div className="border rounded-lg overflow-hidden bg-card">
+            <GanttChart phases={roadmap.phases} />
           </div>
         </div>
       </div>

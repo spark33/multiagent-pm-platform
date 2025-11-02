@@ -63,11 +63,12 @@ Visit http://localhost:3000 to see the application.
 - **UI Components**: shadcn/ui with Radix UI
 - **Markdown**: react-markdown with @tailwindcss/typography
 
-### Backend (Coming Soon)
-- Python FastAPI or Node.js
-- PostgreSQL for persistence
-- LLM integration (OpenAI/Anthropic)
-- Vector database for semantic search
+### Backend
+- **Framework**: Express.js
+- **Language**: TypeScript
+- **Database**: SQLite with better-sqlite3
+- **API**: RESTful endpoints for projects, agents, chat, and roadmaps
+- **Ready for LLM**: Placeholder functions for OpenAI/Anthropic integration
 
 ## Documentation
 
@@ -82,16 +83,25 @@ Visit http://localhost:3000 to see the application.
 - [**Sitemap**](./frontend/docs/SITEMAP.md) - Complete sitemap and data models
 - [**LLM Integration Guide**](./frontend/LLM_INTEGRATION.md) - How to integrate LLMs into the PM flow
 
+### Backend
+- [**Backend README**](./backend/README.md) - Backend setup and API documentation
+
 ## Current State
 
-The frontend is fully functional with:
+**Frontend** is fully functional with:
 - ✅ PM-led discovery chat flow
 - ✅ Smart recommendations based on project description
 - ✅ Interactive chat with structured options/actions
 - ✅ Comprehensive roadmap generation
 - ✅ Visual timeline with phases and tasks
 - ✅ AI agent assignments with roles and deliverables
-- ✅ In-memory storage (ready for backend integration)
+
+**Backend** is operational with:
+- ✅ Express + TypeScript API server
+- ✅ SQLite database with full schema
+- ✅ Projects, agents, chat, and roadmap endpoints
+- ✅ Sample data seeding
+- ✅ Ready for LLM integration
 
 **Ready for LLM Integration** - See `frontend/LLM_INTEGRATION.md` for complete integration guide.
 
@@ -116,11 +126,12 @@ The frontend is fully functional with:
 ## Future Enhancements
 
 ### Backend
-- [ ] FastAPI/Node.js backend service
-- [ ] PostgreSQL database for persistence
+- [x] Express.js backend service with TypeScript
+- [x] SQLite database for persistence
 - [ ] LLM integration for intelligent PM conversations
 - [ ] Real-time competitor research
 - [ ] Actual AI agent execution with status updates
+- [ ] WebSockets for real-time updates
 
 ### Frontend
 - [ ] Authentication and user accounts
@@ -138,14 +149,17 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for development guidelines and sta
 ### Running the Stack
 
 ```bash
-# Frontend (currently available)
+# Backend
+cd backend
+npm install
+npm run db:migrate  # Create database tables
+npm run db:seed     # Seed sample data
+npm run dev         # Start on http://localhost:3001
+
+# Frontend
 cd frontend
 npm install
-npm run dev
-
-# Backend (coming soon)
-cd backend
-# Setup instructions TBD
+npm run dev         # Start on http://localhost:3000
 ```
 
 ## Status
@@ -153,8 +167,9 @@ cd backend
 🚧 **In Active Development** 🚧
 
 - ✅ Frontend MVP complete
+- ✅ Backend API complete
 - 🔄 LLM integration in progress
-- 📋 Backend services planned
+- 📋 Agent execution orchestration planned
 
 ## License
 
