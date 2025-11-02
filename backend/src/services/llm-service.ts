@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { ChatMessage } from '../types'
+import type { ChatMessage, Agent, Task, Deliverable, DiscussionMessage, ApprovalStatus } from '../types'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -257,5 +257,226 @@ Return the roadmap in JSON format matching this structure:
     console.error('Error generating roadmap with LLM:', error)
     // Return null to fall back to the mock generator
     return null
+  }
+}
+
+/**
+ * Generate initial deliverable for a task
+ * Agent creates their first version of the deliverable
+ */
+export async function generateInitialDeliverable(
+  agent: Agent,
+  task: Task
+): Promise<string> {
+  try {
+    const prompt = `You are ${agent.name}, a ${agent.role}.
+
+Your goal: ${agent.goal}
+Your backstory: ${agent.backstory}
+
+You have been assigned to complete the following task:
+
+**Task:** ${task.title}
+**Description:** ${task.description}
+**Deliverables:** ${task.deliverables.join(', ')}
+
+Create a comprehensive deliverable for this task. Be specific, detailed, and actionable.
+Format your response in markdown with clear sections.`
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 2048,
+      system: 'You are a helpful AI agent working on a project task. Create high-quality, detailed deliverables.',
+      messages: [{ role: 'user', content: prompt }]
+    })
+
+    const textContent = response.content.find(block => block.type === 'text')
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('No text content in response')
+    }
+
+    return textContent.text
+  } catch (error) {
+    console.error('Error generating initial deliverable:', error)
+    return `# ${task.title}\n\n${task.description}\n\n*Deliverable content would be generated here*`
+  }
+}
+
+/**
+ * Generate review feedback from a reviewer agent
+ * Reviewer analyzes the deliverable and provides structured feedback
+ */
+export async function generateReviewFeedback(
+  reviewer: Agent,
+  deliverable: Deliverable,
+  previousMessages: DiscussionMessage[]
+): Promise<{ content: string; approvalStatus: ApprovalStatus }> {
+  try {
+    // Build context from previous discussion
+    const discussionContext = previousMessages.length > 0
+      ? `\n\nPrevious discussion:\n${previousMessages.map(m =>
+          `**${m.agentName} (${m.agentRole})**: ${m.content}`
+        ).join('\n\n')}`
+      : ''
+
+    const prompt = `You are ${reviewer.name}, a ${reviewer.role}.
+
+Your goal: ${reviewer.goal}
+Your backstory: ${reviewer.backstory}
+
+You are reviewing the following deliverable:
+
+${deliverable.content}
+
+${discussionContext}
+
+Provide a thorough review with:
+1. What works well
+2. Specific concerns or suggestions for improvement
+3. Whether you approve this deliverable or request changes
+
+End your review with either:
+- "APPROVED" if this deliverable meets quality standards
+- "NEEDS_REVISION" if changes are required
+
+Be constructive, specific, and focus on helping improve the deliverable.`
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 1024,
+      system: 'You are a thorough reviewer providing constructive feedback on project deliverables.',
+      messages: [{ role: 'user', content: prompt }]
+    })
+
+    const textContent = response.content.find(block => block.type === 'text')
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('No text content in response')
+    }
+
+    const content = textContent.text
+    const approvalStatus: ApprovalStatus = content.includes('APPROVED')
+      ? 'approved'
+      : 'has_concerns'
+
+    return { content, approvalStatus }
+  } catch (error) {
+    console.error('Error generating review feedback:', error)
+    return {
+      content: 'Error generating review. Defaulting to approval.',
+      approvalStatus: 'approved'
+    }
+  }
+}
+
+/**
+ * Generate primary agent's response to reviewer feedback
+ * Determines if revision is needed and how to address concerns
+ */
+export async function generatePrimaryAgentResponse(
+  primaryAgent: Agent,
+  deliverable: Deliverable,
+  reviewerFeedback: DiscussionMessage[],
+  allMessages: DiscussionMessage[]
+): Promise<{ content: string; needsRevision: boolean; revisionSummary?: string }> {
+  try {
+    const feedbackSummary = reviewerFeedback.map(m =>
+      `**${m.agentName} (${m.agentRole})**:\n${m.content}`
+    ).join('\n\n')
+
+    const prompt = `You are ${primaryAgent.name}, a ${primaryAgent.role}.
+
+Your goal: ${primaryAgent.goal}
+
+You created this deliverable:
+${deliverable.content}
+
+The review team provided this feedback:
+${feedbackSummary}
+
+Respond to the feedback:
+1. Acknowledge valid points
+2. Explain your approach where needed
+3. Determine if you need to create a revised version
+
+End your response with either:
+- "REVISION_NEEDED" if you will create an updated deliverable
+- "NO_REVISION" if concerns can be addressed without changing the deliverable
+
+If revision is needed, briefly summarize what you'll change.`
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 1024,
+      system: 'You are responding to feedback on your work. Be professional and collaborative.',
+      messages: [{ role: 'user', content: prompt }]
+    })
+
+    const textContent = response.content.find(block => block.type === 'text')
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('No text content in response')
+    }
+
+    const content = textContent.text
+    const needsRevision = content.includes('REVISION_NEEDED')
+
+    // Extract revision summary if present
+    let revisionSummary: string | undefined
+    if (needsRevision) {
+      const summaryMatch = content.match(/will (create|make|update|revise|change).*?(?=\n\n|$)/i)
+      revisionSummary = summaryMatch ? summaryMatch[0] : 'Addressing reviewer feedback'
+    }
+
+    return { content, needsRevision, revisionSummary }
+  } catch (error) {
+    console.error('Error generating primary agent response:', error)
+    return {
+      content: 'Thank you for the feedback. I will review and make necessary updates.',
+      needsRevision: true,
+      revisionSummary: 'Updating based on feedback'
+    }
+  }
+}
+
+/**
+ * Generate revised deliverable based on feedback
+ */
+export async function generateRevisedDeliverable(
+  primaryAgent: Agent,
+  currentDeliverable: Deliverable,
+  reviewerFeedback: DiscussionMessage[],
+  allMessages: DiscussionMessage[]
+): Promise<string> {
+  try {
+    const feedbackSummary = reviewerFeedback.map(m =>
+      `**${m.agentName}**: ${m.content}`
+    ).join('\n\n')
+
+    const prompt = `You are ${primaryAgent.name}, a ${primaryAgent.role}.
+
+Your current deliverable:
+${currentDeliverable.content}
+
+Reviewer feedback to address:
+${feedbackSummary}
+
+Create an improved version of the deliverable that addresses all valid concerns.
+Maintain the same format and structure, but incorporate the suggested improvements.`
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 2048,
+      system: 'You are revising a deliverable based on peer feedback. Maintain quality while addressing concerns.',
+      messages: [{ role: 'user', content: prompt }]
+    })
+
+    const textContent = response.content.find(block => block.type === 'text')
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('No text content in response')
+    }
+
+    return textContent.text
+  } catch (error) {
+    console.error('Error generating revised deliverable:', error)
+    return currentDeliverable.content + '\n\n---\n*Revision in progress*'
   }
 }

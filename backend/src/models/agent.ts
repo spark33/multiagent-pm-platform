@@ -17,6 +17,15 @@ export class AgentModel {
     return this.fromRow(row)
   }
 
+  static getByIds(ids: string[]): Agent[] {
+    if (ids.length === 0) return []
+
+    const placeholders = ids.map(() => '?').join(', ')
+    const rows = db.prepare(`SELECT * FROM agents WHERE id IN (${placeholders})`).all(...ids) as any[]
+
+    return rows.map(row => this.fromRow(row))
+  }
+
   static create(data: CreateAgentRequest): Agent {
     const id = uuidv4()
     const now = new Date().toISOString()

@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import projectRoutes from './routes/projects'
 import agentRoutes from './routes/agents'
+import taskExecutionRoutes from './routes/task-execution'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -25,6 +26,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/projects', projectRoutes)
 app.use('/api/agents', agentRoutes)
+app.use('/api/task-executions', taskExecutionRoutes)
 
 // 404 handler
 app.use((req, res) => {
